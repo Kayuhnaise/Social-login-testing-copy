@@ -10,12 +10,18 @@ dotenv.config();
 
 const app = express();
 
-// Frontend + callback URLs from env so we can switch between local & Vercel
+/* -----------------------------------------
+   ENVIRONMENT SETUP
+------------------------------------------ */
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3001";
+
 const GOOGLE_CALLBACK_URL =
-  process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback";
+  process.env.GOOGLE_CALLBACK_URL ||
+  "http://localhost:3000/auth/google/callback";
+
 const FACEBOOK_CALLBACK_URL =
-  process.env.FACEBOOK_CALLBACK_URL || "http://localhost:3000/auth/facebook/callback";
+  process.env.FACEBOOK_CALLBACK_URL ||
+  "http://localhost:3000/auth/facebook/callback";
 
 /* -----------------------------------------
    CORS
@@ -89,15 +95,16 @@ passport.use(
 /* -----------------------------------------
    HOME ROUTE
 ------------------------------------------ */
-// Simple HTML so Vercel root URL looks nicer
 app.get("/", (req, res) => {
   res.send(`
-    <h1>Social Login Backend</h1>
-    <p>The backend is running on Vercel.</p>
+    <h1>Social Login Backend (Vercel)</h1>
+    <p>Your backend is running.</p>
+    <p><strong>Frontend:</strong> <a href="${FRONTEND_URL}">${FRONTEND_URL}</a></p>
+
+    <h3>Test OAuth directly:</h3>
     <ul>
-      <li><a href="/auth/google">Login with Google (backend flow)</a></li>
-      <li><a href="/auth/facebook">Login with Facebook (backend flow)</a></li>
-      <li>Frontend URL (for full app): <a href="${FRONTEND_URL}">${FRONTEND_URL}</a></li>
+      <li><a href="/auth/google">Login with Google</a></li>
+      <li><a href="/auth/facebook">Login with Facebook</a></li>
     </ul>
   `);
 });
@@ -129,9 +136,7 @@ app.get(
    PROFILE ROUTE
 ------------------------------------------ */
 app.get("/profile", (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
+  if (!req.user) return res.status(401).json({ error: "Not authenticated" });
 
   res.json({
     id: req.user.id,
@@ -170,6 +175,7 @@ app.put("/api/items/:id", (req, res) => {
   const id = Number(req.params.id);
   const idx = items.findIndex((i) => i.id === id);
   if (idx === -1) return res.status(404).json({ error: "Not found" });
+
   items[idx] = { ...items[idx], ...req.body };
   res.json(items[idx]);
 });
@@ -181,18 +187,17 @@ app.delete("/api/items/:id", (req, res) => {
 });
 
 /* -----------------------------------------
-   START SERVER (LOCAL ONLY)
+   LOCAL LISTEN (NOT for Vercel)
 ------------------------------------------ */
-console.log("CRUD ROUTES LOADED");
-
 const PORT = process.env.PORT || 3000;
 
-// Run a real listener only when NOT on Vercel (Vercel sets VERCEL=true)
-if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Local server running at http://localhost:${PORT}`);
   });
 }
 
-// Export app for Vercel serverless + tests
+/* -----------------------------------------
+   EXPORT FOR VERCEL
+------------------------------------------ */
 export default app;
