@@ -1,26 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./NavBar.css";
+
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
 
 export default function NavBar() {
   const handleLogout = async () => {
     await fetch(`${API_BASE}/logout`, {
       method: "GET",
-      credentials: "include"
+      credentials: "include",
     });
+
     window.location.href = "/login";
   };
 
   return (
-    <nav className="navbar-modern">
-      <div className="left">
-        <Link to="/login">Login</Link>
-        <Link to="/dashboard">Dashboard</Link>
-      </div>
-
-      <button className="logout-modern" onClick={handleLogout}>
-        Logout
-      </button>
+    <nav className="navbar">
+      <Link to="/dashboard">Dashboard</Link>
+      <button onClick={handleLogout}>Logout</button>
     </nav>
   );
 }
