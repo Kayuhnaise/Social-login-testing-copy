@@ -42,10 +42,11 @@ app.use(express.json());
 /* -----------------------------------------
    SESSIONS (IMPORTANT FOR VERCEL)
 ------------------------------------------ */
-const isProd = process.env.NODE_ENV === "production";
+const isProd =
+  process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 
 if (isProd) {
-  // needed so secure cookies work correctly behind Vercel's proxy
+  // required so secure cookies work correctly behind Vercel's proxy
   app.set("trust proxy", 1);
 }
 
