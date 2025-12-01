@@ -39,6 +39,8 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+const isProd = process.env.NODE_ENV === "production";
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "change-me",
@@ -46,9 +48,12 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd, // cookie only over HTTPS in production
     },
   })
 );
+
 
 app.use(passport.initialize());
 app.use(passport.session());
