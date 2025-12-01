@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import ItemForm from "../components/ItemForm";
-import ItemList from "../components/ItemList";
 import "./Dashboard.css";
+
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [items, setItems] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
+  const [text, setText] = useState("");
+  const [operation, setOperation] = useState("sentiment");
+  const [result, setResult] = useState(null);
+  const [analyses, setAnalyses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   /* -----------------------------
      LOAD USER FROM BACKEND
@@ -32,74 +34,98 @@ export default function Dashboard() {
   };
 
   /* -----------------------------
-     LOAD ITEMS
+     LOAD ANALYSES HISTORY
   ------------------------------ */
-  const loadItems = async () => {
+  const loadAnalyses = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/items`, {
+      const res = await fetch(`${API_BASE}/api/analyses`, {
         credentials: "include",
       });
+      if (!res.ok) {
+        console.error("Failed to load analyses");
+        return;
+      }
       const data = await res.json();
-      setItems(data);
+      setAnalyses(data);
     } catch (err) {
-      console.error("Error loading items:", err);
+      console.error("Error loading analyses:", err);
     }
   };
 
   useEffect(() => {
     loadUser();
-    loadItems();
+    loadAnalyses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* -----------------------------
-     CRUD Operations
+     RUN NLP ANALYSIS
   ------------------------------ */
-  const addItem = async (item) => {
-    await fetch(`${API_BASE}/api/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(item),
-    });
+  const runAnalysis = async () => {
+    if (!text.trim()) {
+      alert("Please enter some text to analyze.");
+      return;
+    }
 
-    loadItems();
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/analyses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ inputText: text, operation }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Analysis failed");
+        setLoading(false);
+        return;
+      }
+
+      // data = { id, inputText, operation, result, createdAt }
+      setResult(data.result);
+      setAnalyses((prev) => [data, ...prev]);
+    } catch (err) {
+      console.error("Error running analysis:", err);
+      alert("Error running analysis.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateItem = async (item) => {
-  await fetch(`${API_BASE}/api/items/${item.id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(item),
-  });
-
-  setSelected(null);
-  loadItems();
-};
-
-    setSelected(null);
-    loadItems();
-  };
-
-  const deleteItem = async (id) => {
-    await fetch(`${API_BASE}/api/items/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    loadItems();
+  /* -----------------------------
+     DELETE ANALYSIS FROM HISTORY
+  ------------------------------ */
+  const deleteAnalysis = async (id) => {
+    try {
+      await fetch(`${API_BASE}/api/analyses/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      setAnalyses((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      console.error("Error deleting analysis:", err);
+    }
   };
 
   /* -----------------------------
      LOGOUT
   ------------------------------ */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/logout`, {
-      method: "GET",
-      credentials: "include",
-    });
-
-    window.location.href = "/login";
+    try {
+      await fetch(`${API_BASE}/logout`, {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Error logging out:", err);
+    } finally {
+      window.location.href = "/login";
+    }
   };
 
   /* -----------------------------
@@ -107,10 +133,9 @@ export default function Dashboard() {
   ------------------------------ */
   return (
     <div className="page">
-
       {/* -------- AVATAR HEADER -------- */}
       <div className="dash-header-avatar">
-        <h1>Dashboard</h1>
+        <h1>NLP Dashboard</h1>
 
         {user && (
           <div className="user-info">
@@ -129,23 +154,89 @@ export default function Dashboard() {
         Logout
       </button>
 
-      {/* ITEM FORM SECTION */}
-      <div className="section item-form">
-        <ItemForm
-          selected={selected}
-          onSave={selected ? updateItem : addItem}
-          onCancel={() => setSelected(null)}
+      {/* TEXT INPUT + OPERATION CHOOSER */}
+      <div className="section nlp-input">
+        <h2>Analyze Text</h2>
+        <textarea
+          className="nlp-textarea"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={6}
+          placeholder="Paste or type text to analyze (reviews, feedback, emails, etc.)"
         />
+
+        <div className="nlp-toolbar">
+          <label>
+            Operation:&nbsp;
+            <select
+              value={operation}
+              onChange={(e) => setOperation(e.target.value)}
+            >
+              <option value="sentiment">Sentiment</option>
+              <option value="summary">Summarization</option>
+              <option value="keywords">Keywords</option>
+              <option value="entities">Entities</option>
+              <option value="classify">Classification</option>
+              <option value="chat">Chat</option>
+            </select>
+          </label>
+
+          <button onClick={runAnalysis} disabled={loading}>
+            {loading ? "Analyzing..." : "Run Analysis"}
+          </button>
+        </div>
       </div>
 
-      {/* ITEM LIST SECTION */}
-      <div className="section item-list">
-        <ItemList
-          items={items}
-          onEdit={(item) => setSelected(item)}
-          onDelete={deleteItem}
-        />
+      {/* RESULT PANEL */}
+      <div className="section nlp-result">
+        <h2>Result</h2>
+        {result ? (
+          <pre className="nlp-result-pre">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        ) : (
+          <p>No result yet. Run an analysis to see output here.</p>
+        )}
+      </div>
+
+      {/* HISTORY PANEL */}
+      <div className="section nlp-history">
+        <h2>History</h2>
+        {analyses.length === 0 ? (
+          <p>No analyses yet.</p>
+        ) : (
+          <ul className="analysis-list">
+            {analyses.map((a) => (
+              <li key={a.id} className="analysis-card">
+                <div className="analysis-header">
+                  <strong>{a.operation.toUpperCase()}</strong>
+                  <span className="analysis-time">
+                    {new Date(a.createdAt).toLocaleString()}
+                  </span>
+                  <button
+                    className="analysis-delete"
+                    onClick={() => deleteAnalysis(a.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <details>
+                  <summary>Input text</summary>
+                  <p>{a.inputText}</p>
+                </details>
+
+                <details>
+                  <summary>Result</summary>
+                  <pre className="nlp-result-pre">
+                    {JSON.stringify(a.result, null, 2)}
+                  </pre>
+                </details>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
-
+}
