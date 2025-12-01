@@ -7,13 +7,15 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
+  const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
 
   /* -----------------------------
      LOAD USER FROM BACKEND
   ------------------------------ */
   const loadUser = async () => {
     try {
-      const res = await fetch("http://localhost:3000/profile", {
+      const res = await fetch(`${API_BASE}/profile`, {
         credentials: "include",
       });
 
@@ -34,7 +36,7 @@ export default function Dashboard() {
   ------------------------------ */
   const loadItems = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/items", {
+      const res = await fetch(`${API_BASE}/api/items`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -53,7 +55,7 @@ export default function Dashboard() {
      CRUD Operations
   ------------------------------ */
   const addItem = async (item) => {
-    await fetch("http://localhost:3000/api/items", {
+    await fetch(`${API_BASE}/api/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -64,19 +66,23 @@ export default function Dashboard() {
   };
 
   const updateItem = async (item) => {
-    await fetch(`http://localhost:3000/api/items/${selected.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(item),
-    });
+  await fetch(`${API_BASE}/api/items/${item.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(item),
+  });
+
+  setSelected(null);
+  loadItems();
+};
 
     setSelected(null);
     loadItems();
   };
 
   const deleteItem = async (id) => {
-    await fetch(`http://localhost:3000/api/items/${id}`, {
+    await fetch(`${API_BASE}/api/items/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -88,7 +94,7 @@ export default function Dashboard() {
      LOGOUT
   ------------------------------ */
   const handleLogout = async () => {
-    await fetch("http://localhost:3000/logout", {
+    await fetch(`${API_BASE}/logout`, {
       method: "GET",
       credentials: "include",
     });
@@ -142,4 +148,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+

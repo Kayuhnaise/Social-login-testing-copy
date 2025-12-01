@@ -4,7 +4,7 @@ import "./NavBar.css";
 
 export default function NavBar() {
   const handleLogout = async () => {
-    await fetch("http://localhost:3000/logout", {
+    await fetch(`${API_BASE}/logout`, {
       method: "GET",
       credentials: "include"
     });
