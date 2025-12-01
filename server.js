@@ -10,13 +10,22 @@ dotenv.config();
 
 const app = express();
 
+// Frontend + callback URLs from env so we can switch between local & Vercel
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3001";
+const GOOGLE_CALLBACK_URL =
+  process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback";
+const FACEBOOK_CALLBACK_URL =
+  process.env.FACEBOOK_CALLBACK_URL || "http://localhost:3000/auth/facebook/callback";
+
 /* -----------------------------------------
-   CORS (MUST COME BEFORE ALL ROUTES)
+   CORS
 ------------------------------------------ */
-app.use(cors({
-  origin: "http://localhost:3001",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
+);
 
 /* -----------------------------------------
    MIDDLEWARE
@@ -24,14 +33,16 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+    },
+  })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -45,63 +56,77 @@ passport.deserializeUser((user, done) => done(null, user));
 /* -----------------------------------------
    GOOGLE STRATEGY
 ------------------------------------------ */
-passport.use(new GoogleStrategy(
-  {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback"
-  },
-  (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-  }
-));
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: GOOGLE_CALLBACK_URL,
+    },
+    (accessToken, refreshToken, profile, done) => {
+      return done(null, profile);
+    }
+  )
+);
 
 /* -----------------------------------------
    FACEBOOK STRATEGY
 ------------------------------------------ */
-passport.use(new FacebookStrategy(
-  {
-    clientID: process.env.FACEBOOK_CLIENT_ID,
-    clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    callbackURL: "/auth/facebook/callback",
-    profileFields: ["id", "displayName", "emails", "photos"]
-  },
-  (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-  }
-));
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+      callbackURL: FACEBOOK_CALLBACK_URL,
+      profileFields: ["id", "displayName", "emails", "photos"],
+    },
+    (accessToken, refreshToken, profile, done) => {
+      return done(null, profile);
+    }
+  )
+);
+
+/* -----------------------------------------
+   HOME ROUTE
+------------------------------------------ */
+// Simple HTML so Vercel root URL looks nicer
+app.get("/", (req, res) => {
+  res.send(`
+    <h1>Social Login Backend</h1>
+    <p>The backend is running on Vercel.</p>
+    <ul>
+      <li><a href="/auth/google">Login with Google (backend flow)</a></li>
+      <li><a href="/auth/facebook">Login with Facebook (backend flow)</a></li>
+      <li>Frontend URL (for full app): <a href="${FRONTEND_URL}">${FRONTEND_URL}</a></li>
+    </ul>
+  `);
+});
 
 /* -----------------------------------------
    AUTH ROUTES
 ------------------------------------------ */
-app.get("/", (req, res) => res.send("Backend running"));
-
-app.get("/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/?error=google_failed" }),
   (req, res) => {
-    res.redirect("http://localhost:3001/dashboard");
+    res.redirect(`${FRONTEND_URL}/dashboard`);
   }
 );
 
-app.get("/auth/facebook",
-  passport.authenticate("facebook")
-);
+app.get("/auth/facebook", passport.authenticate("facebook"));
 
 app.get(
   "/auth/facebook/callback",
   passport.authenticate("facebook", { failureRedirect: "/?error=facebook_failed" }),
   (req, res) => {
-    res.redirect("http://localhost:3001/dashboard");
+    res.redirect(`${FRONTEND_URL}/dashboard`);
   }
 );
 
 /* -----------------------------------------
-   PROFILE ROUTE (FRONTEND USES THIS)
+   PROFILE ROUTE
 ------------------------------------------ */
 app.get("/profile", (req, res) => {
   if (!req.user) {
@@ -112,12 +137,12 @@ app.get("/profile", (req, res) => {
     id: req.user.id,
     displayName: req.user.displayName,
     email: req.user.emails?.[0]?.value || null,
-    photo: req.user.photos?.[0]?.value || null
+    photo: req.user.photos?.[0]?.value || null,
   });
 });
 
 /* -----------------------------------------
-   LOGOUT ROUTE (FULLY FIXED)
+   LOGOUT ROUTE
 ------------------------------------------ */
 app.get("/logout", (req, res) => {
   req.logout(() => {
@@ -156,18 +181,18 @@ app.delete("/api/items/:id", (req, res) => {
 });
 
 /* -----------------------------------------
-   START SERVER
+   START SERVER (LOCAL ONLY)
 ------------------------------------------ */
 console.log("CRUD ROUTES LOADED");
 
 const PORT = process.env.PORT || 3000;
 
-// Only start listening if not in test mode
-if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () =>
-    console.log(`Server running on http://localhost:${PORT}`)
-  );
+// Run a real listener only when NOT on Vercel (Vercel sets VERCEL=true)
+if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
-// Export app for Jest tests
+// Export app for Vercel serverless + tests
 export default app;
