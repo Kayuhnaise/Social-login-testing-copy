@@ -34,12 +34,20 @@ app.use(
 );
 
 /* -----------------------------------------
-   MIDDLEWARE
+   BODY PARSING
 ------------------------------------------ */
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+/* -----------------------------------------
+   SESSIONS (IMPORTANT FOR VERCEL)
+------------------------------------------ */
 const isProd = process.env.NODE_ENV === "production";
+
+if (isProd) {
+  // needed so secure cookies work correctly behind Vercel's proxy
+  app.set("trust proxy", 1);
+}
 
 app.use(
   session({
@@ -53,7 +61,6 @@ app.use(
     },
   })
 );
-
 
 app.use(passport.initialize());
 app.use(passport.session());
