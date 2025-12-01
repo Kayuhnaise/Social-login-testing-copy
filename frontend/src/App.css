@@ -1,0 +1,122 @@
+/* Modern Global Theme */
+
+body {
+  margin: 0;
+  background: #f3f4f6;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  color: #222;
+}
+
+.page {
+  max-width: 780px;
+  margin: 40px auto;
+  background: white;
+  padding: 32px;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+h1 {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+h2 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Beautiful Buttons */
+
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  transition: 0.25s ease;
+}
+
+/* Login buttons */
+
+.google-btn, .facebook-btn {
+  display: inline-block;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+  margin-right: 12px;
+  margin-top: 18px;
+  border-radius: 8px;
+}
+
+.google-btn {
+  background: #4285f4;
+}
+
+.google-btn:hover {
+  background: #2f6bd4;
+  transform: translateY(-2px);
+}
+
+.facebook-btn {
+  background: #4267b2;
+}
+
+.facebook-btn:hover {
+  background: #365899;
+  transform: translateY(-2px);
+}
+
+/* Inputs / form fields */
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-right: 10px;
+}
+
+input:focus {
+  border-color: #0077ff;
+  outline: none;
+  box-shadow: 0 0 4px rgba(0, 119, 255, 0.3);
+}
+
+/* Item list styling */
+
+.item-card {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 10px;
+  margin: 10px 0;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-card:hover {
+  background: #f0f0f0;
+}
+
+/* edit & delete buttons */
+.edit-btn {
+  background: #0077ff;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-right: 8px;
+}
+
+.delete-btn {
+  background: #ff4d4f;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.edit-btn:hover {
+  background: #0061d0;
+}
+
+.delete-btn:hover {
+  background: #d9363e;
+}
