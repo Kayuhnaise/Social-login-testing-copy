@@ -3,12 +3,13 @@ import ItemForm from "../components/ItemForm";
 import ItemList from "../components/ItemList";
 import "./Dashboard.css";
 
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
-  const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
 
   /* -----------------------------
      LOAD USER FROM BACKEND
@@ -49,6 +50,7 @@ export default function Dashboard() {
   useEffect(() => {
     loadUser();
     loadItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* -----------------------------
@@ -66,16 +68,12 @@ export default function Dashboard() {
   };
 
   const updateItem = async (item) => {
-  await fetch(`${API_BASE}/api/items/${item.id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(item),
-  });
-
-  setSelected(null);
-  loadItems();
-};
+    await fetch(`${API_BASE}/api/items/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(item),
+    });
 
     setSelected(null);
     loadItems();
@@ -107,7 +105,6 @@ export default function Dashboard() {
   ------------------------------ */
   return (
     <div className="page">
-
       {/* -------- AVATAR HEADER -------- */}
       <div className="dash-header-avatar">
         <h1>Dashboard</h1>
@@ -148,4 +145,6 @@ export default function Dashboard() {
       </div>
     </div>
   );
+}
+
 
